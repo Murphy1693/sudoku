@@ -1,126 +1,87 @@
 import { useEffect, useState } from "react";
-import { valuesSubscription } from "./App";
+import { DispatchObject, valuesSubscription } from "./App";
 
 type BoardElementProps = {
-  value: number | string | null;
+  value: string;
   rowNumber: number;
   columnNumber: number;
+  speed: number;
 };
 
-type dispatchObject = {};
-
-let handleDispatch = (dispatchObject) => {};
+const colors: { [key: number | string]: string } = {
+  0: "transparent", // transparent
+  1: "rgb(226 232 240)", // "rgb(209 213 219)", // gray
+  2: "rgb(254 240 138)", // yellow
+  3: "rgb(248 113 113)", // red
+  4: "rgb(134 239 172)", // green
+};
 
 const BoardElement = ({
   value,
   rowNumber,
   columnNumber,
+  speed,
 }: BoardElementProps) => {
-  const [displayValue, setDisplayValue] = useState(value);
+  const [displayValue, setDisplayValue] = useState("");
   const [definite, setDefinite] = useState<boolean | null>(null);
-  const [mostRecent, setMostRecent] = useState(false);
+  const [colorScheme, setColorScheme] = useState(0);
+  const [removedValueAnimation, setRemovedValueAnimation] = useState(false);
 
   useEffect(() => {
+    let handleDispatch = ({
+      board_index,
+      definite = false,
+      value,
+      color,
+    }: DispatchObject) => {
+      if (value && value !== "0") {
+        setDisplayValue(value === "." ? "" : value);
+      }
+      if (board_index === -1) {
+        setColorScheme(4);
+      } else if (color !== undefined) {
+        setColorScheme(color);
+      } else {
+        if (value === ".") {
+          setColorScheme(3);
+        } else if (definite === true) {
+          setColorScheme(4);
+        } else {
+          setColorScheme(2);
+        }
+      }
+    };
     let index = rowNumber * 9 + columnNumber;
-    valuesSubscription.subscribe(index, setDisplayValue, setDefinite);
+    valuesSubscription.subscribe(index, handleDispatch);
   }, []);
+
+  useEffect(() => {
+    setDisplayValue(value === "." ? "" : value);
+  }, [value]);
 
   return (
     <div
       className={
         columnNumber === 8
-          ? "border-l-2 border-r-2 border-black"
+          ? "border-l-2 border-r-4 border-black"
+          : columnNumber % 3 === 0
+          ? "border-l-4 border-black"
           : "border-l-2 border-black"
-        // rowNumber === 8
-        //   ? "box-content border-r-2 border-t-2 border-b-2 border-black p-4"
-        //   : "box-content border-r-2 border-t-2 border-black p-4"
       }
     >
       <div
-        // className={
-        //   definite === true
-        //     ? "bg-green-400"
-        //     : definite === false
-        //     ? displayValue === "."
-        //       ? "bg-red-400"
-        //       : "bg-yellow-300"
-        //     : "bg-gray-200 text-black"
-        // }
-        className={
-          definite === true
-            ? "bg-green-400"
-            : definite === false
-            ? displayValue === "." && mostRecent
-              ? "bg-red-400"
-              : "bg-yellow-300"
-            : "bg-gray-200 text-black"
-        }
+        style={{
+          backgroundColor: colors[colorScheme],
+        }}
       >
-        <div className="p-6">
-          <span className="absolute -translate-x-1/2 -translate-y-1/2">
-            {displayValue === "." ? "" : displayValue}
+        <div className="p-3 md:p-6">
+          <span className="absolute -translate-x-1/2 -translate-y-1/2 md:text-2xl">
+            {displayValue}
           </span>
         </div>
       </div>
     </div>
   );
 };
-
-// const BoardElement = ({
-//   value,
-//   rowNumber,
-//   columnNumber,
-// }: BoardElementProps) => {
-//   const [displayValue, setDisplayValue] = useState(value);
-//   const [definite, setDefinite] = useState<boolean | null>(null);
-//   const [mostRecent, setMostRecent] = useState(false);
-
-//   useEffect(() => {
-//     let handleDispatch = (dispatchObject) => {
-//       if (dispatchObject.index === rowNumber * 9 + columnNumber) {
-//         setMostRecent(true);
-//         setDisplayValue(dispatchObject.value);
-//         setDefinite(dispatchObject.definite);
-//       } else {
-//         setMostRecent(false);
-//       }
-//     };
-//     let index = rowNumber * 9 + columnNumber;
-//     valuesSubscription.subscribe(index, handleDispatch);
-//   }, []);
-
-//   return (
-//     <div
-//       className={
-//         columnNumber === 8
-//           ? "border-l-2 border-r-2 border-black"
-//           : "border-l-2 border-black"
-//         // rowNumber === 8
-//         //   ? "box-content border-r-2 border-t-2 border-b-2 border-black p-4"
-//         //   : "box-content border-r-2 border-t-2 border-black p-4"
-//       }
-//     >
-//       <div
-//         className={
-//           definite === true
-//             ? "bg-green-400"
-//             : definite === false
-//             ? displayValue === "."
-//               ? "bg-red-400"
-//               : "bg-yellow-300"
-//             : "bg-gray-200 text-black"
-//         }
-//       >
-//         <div className={mostRecent ? "scale-[2] p-6" : "p-6"}>
-//           <span className="absolute -translate-x-1/2 -translate-y-1/2">
-//             {displayValue}
-//           </span>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default BoardElement;
 
 export default BoardElement;

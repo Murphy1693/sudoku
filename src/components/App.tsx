@@ -1,164 +1,146 @@
-import { useEffect, useRef, useState } from "react";
-import { board1, boardState } from "./../utils/boards";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+// import { board1, boardState } from "./../utils/boards";
 import Board from "./Board";
+import ControlPanel from "./ControlPanel";
+import axios from "axios";
 // import { valuesSubscription } from "../../subscription";
-let listeners: { [key: number]: React.Dispatch<any>[] } = {};
+// let listeners: { [key: number]: React.Dispatch<any>[] } = {};
+let listeners: { [key: number]: (dispatchObject: DispatchObject) => void } = {};
 
-export type DispatchObject = {
-  indexPair: string;
+export type DispatchObject = Adjustment & {
+  color?: 0 | 1 | 2 | 3 | 4;
+};
+
+export type Adjustment = {
+  board_index: number;
   definite?: boolean;
-  value: string | null;
+  value: string;
 };
 
-export const valuesSubscription = {
+export type ElementSubscription = {
   subscribe: (
-    elementIndex: number,
-    setValue: React.Dispatch<string | number | null>,
-    setDefinite: React.Dispatch<boolean>
-  ) => {
-    listeners[elementIndex] = [setValue, setDefinite];
+    board_index: number,
+    handleDispatch: (dispatchObject: DispatchObject) => void
+  ) => void;
+  dispatch: (dispatchObject: DispatchObject) => void;
+};
+
+export const valuesSubscription: ElementSubscription = {
+  subscribe: (board_index, handleDispatch) => {
+    listeners[board_index] = handleDispatch;
   },
 
-  dispatch: ({ indexPair, definite, value }: DispatchObject) => {
-    if (indexPair === "-1") {
+  dispatch: (dispatchObject) => {
+    const { board_index, definite, value } = dispatchObject;
+    if (board_index === -1) {
       for (const index in listeners) {
-        listeners[index][1](true);
+        listeners[index]({ board_index: -1, value: "0" });
       }
-      return;
+    } else {
+      listeners[board_index](dispatchObject);
     }
-
-    // else {
-    //   let targetIndex = parseInt(indexPair[0]) * 9 + parseInt(indexPair[2]);
-    //   definite = definite ?? false;
-    //   listeners[targetIndex][0](value);
-    //   listeners[targetIndex][1](definite);
-
-    //   // for (const index in listeners) {
-    //   //   // listeners[index][1](false);
-    //   //   if (index === targetIndex.toString()) {
-    //   //     listeners[index][0](value);
-    //   //     listeners[index][1](definite);
-    //   //   }
-    //   // }
-    // }
   },
 };
+
+const initialBoard = [
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", "", ""],
+];
+
+export type IntervalTimer = string | number | NodeJS.Timer | undefined;
+let intervalTimer: IntervalTimer;
 
 const App = () => {
-  const [board, setBoard] = useState(board1);
+  const [board, setBoard] = useState(initialBoard);
   const [finished, setFinished] = useState(false);
-  // const [boardStateIndex, setBoardStateIndex] = useState(0);
+  const [boardState, setBoardState] = useState<Adjustment[]>([]);
   let boardStateIndex = useRef<number>(0);
-  const [speed, setSpeed] = useState(100);
+  const [speed, setSpeed] = useState(128);
+  const [solving, setSolving] = useState(false);
 
   useEffect(() => {
-    let x: string | number | NodeJS.Timer | undefined;
-    if (boardStateIndex.current < boardState.length) {
-      x = setInterval(() => {
+    axios.get("./board").then((response) => {
+      setBoard(response.data.original_board);
+      setBoardState(response.data.adjustments);
+    });
+  }, []);
+
+  useEffect(() => {
+    console.log(board);
+    boardStateIndex.current = 0;
+    board.forEach((row, row_index) => {
+      row.forEach((val, col_index) => {
+        if (val === ".") {
+          valuesSubscription.dispatch({
+            board_index: row_index * 9 + col_index,
+            definite: false,
+            value: ".",
+            color: 0,
+          });
+        } else {
+          valuesSubscription.dispatch({
+            board_index: row_index * 9 + col_index,
+            value: "0",
+            definite: true,
+            color: 1,
+          });
+        }
+      });
+    });
+  }, [board]);
+
+  useEffect(() => {
+    if (boardStateIndex.current < boardState.length && solving) {
+      setSolving(true);
+      intervalTimer = setInterval(() => {
         valuesSubscription.dispatch(boardState[boardStateIndex.current]);
         boardStateIndex.current++;
         if (boardStateIndex.current === boardState.length) {
-          clearInterval(x);
+          clearInterval(intervalTimer);
           valuesSubscription.dispatch({
-            indexPair: "-1",
+            board_index: -1,
             definite: true,
-            value: null,
+            value: "0",
           });
+          setFinished(true);
+          setSolving(false);
         }
       }, speed);
     }
     return () => {
-      clearInterval(x);
+      clearInterval(intervalTimer);
     };
-  }, [speed]);
+  }, [solving, speed]);
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      <div className="flex flex-col">
-        <button
-          onClick={() => {
-            if (speed > 25) {
-              setSpeed(speed / 2);
-            }
-          }}
-        >
-          SEND IT
-        </button>
-        <button
-          onClick={() => {
-            if (speed <= 2048) {
-              setSpeed(speed * 2);
-            }
-          }}
-        >
-          quit sending it
-        </button>
+    <div className="min-h-screen">
+      <div className="flex flex-col pt-6 md:flex-row">
+        <Board
+          board={board}
+          boardStateIndex={boardStateIndex}
+          valuesSubscription={valuesSubscription}
+          // board={board}
+          setSolving={setSolving}
+          setFinished={setFinished}
+          boardState={boardState}
+          setBoardState={setBoardState}
+          finished={finished}
+          solving={solving}
+          setSpeed={setSpeed}
+          speed={speed}
+          setBoard={setBoard}
+          intervalTimer={intervalTimer}
+        />
       </div>
-      <Board board={board} />
     </div>
   );
 };
 
 export default App;
-
-// let listeners: {
-//   [key: number]: (obj: {
-//     indexPair: string;
-//     definite: boolean;
-//     value: number | string | null;
-//   }) => void;
-// } = {};
-
-// export const valuesSubscription = {
-//   subscribe: (
-//     elementIndex: number,
-//     handleDispatch: ({
-//       indexPair,
-//       definite,
-//       value,
-//     }: {
-//       indexPair: string;
-//       definite: boolean;
-//       value: number | string | null;
-//     }) => void
-//     // setValue: React.Dispatch<string | number | null>,
-//     // setDefinite: React.Dispatch<boolean>
-//   ) => {
-//     // listeners[elementIndex] = [setValue, setDefinite];
-//     listeners[elementIndex] = handleDispatch;
-//   },
-
-//   dispatch: ({
-//     indexPair,
-//     definite,
-//     value,
-//   }: {
-//     indexPair: string;
-//     definite?: boolean;
-//     value: number | string | null | ".";
-//   }) => {
-//     let targetIndex = parseInt(indexPair[0]) * 9 + parseInt(indexPair[2]);
-//     listeners[targetIndex]({
-//       indexPair: indexPair,
-//       definite: definite,
-//       value: value,
-//     });
-//     if (indexPair === "-1") {
-//       // for (const index in listeners) {
-//       //   listeners[index][1](true);
-//       // }
-//     } else {
-//       // let targetIndex = parseInt(indexPair[0]) * 9 + parseInt(indexPair[2]);
-//       // definite = definite ?? false;
-//       // listeners[targetIndex][0](value);
-//       // listeners[targetIndex][1](definite);
-//       // for (const index in listeners) {
-//       //   // listeners[index][1](false);
-//       //   if (index === targetIndex.toString()) {
-//       //     listeners[index][0](value);
-//       //     listeners[index][1](definite);
-//       //   }
-//       // }
-//     }
-//   },
-// };
