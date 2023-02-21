@@ -242,7 +242,7 @@ module.exports.Solver = class Solver {
   }
 
   boardIsValid() {
-    let allArrays = [];
+    let all_arrays = [];
     let rows = [];
     let cols = [];
     let squares = [];
@@ -251,9 +251,9 @@ module.exports.Solver = class Solver {
       cols.push(this.getCol(i * 9 + i));
       squares.push(this.getSquare(13 * (i % 3) + 27 * (Math.floor(i / 3) % 3)));
     }
-    allArrays = allArrays.concat(rows).concat(cols).concat(squares);
-    for (let i = 0; i < allArrays.length; i++) {
-      if (!this.arrIsValid(allArrays[i])) {
+    all_arrays = all_arrays.concat(rows).concat(cols).concat(squares);
+    for (let i = 0; i < all_arrays.length; i++) {
+      if (!this.arrIsValid(all_arrays[i])) {
         return false;
       }
     }
