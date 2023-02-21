@@ -7,7 +7,6 @@ type BoardRowProps = {
 };
 
 const BoardRow = ({ row, rowNumber, speed }: BoardRowProps) => {
-  console.log(row);
   return (
     <div
       className={
@@ -23,6 +22,7 @@ const BoardRow = ({ row, rowNumber, speed }: BoardRowProps) => {
       {row.map((val, colNumber) => {
         return (
           <BoardElement
+            key={rowNumber * 9 + colNumber}
             speed={speed}
             value={val}
             columnNumber={colNumber}

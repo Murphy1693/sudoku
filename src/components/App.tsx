@@ -73,7 +73,6 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    console.log(board);
     boardStateIndex.current = 0;
     board.forEach((row, row_index) => {
       row.forEach((val, col_index) => {

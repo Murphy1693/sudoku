@@ -21,7 +21,7 @@ const Board = ({
     <div className="ml-4 flex">
       <div className="flex flex-col">
         {board.map((row, i) => {
-          return <BoardRow speed={speed} row={row} rowNumber={i} />;
+          return <BoardRow key={i} speed={speed} row={row} rowNumber={i} />;
         })}
         <ControlPanel
           boardStateIndex={boardStateIndex}
