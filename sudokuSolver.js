@@ -6,6 +6,7 @@ module.exports.Solver = class Solver {
     this.sorted_map = [];
     this.insertion_order = [];
     this.adjustments = [];
+    this.solved = null;
     this.solve();
   }
 
@@ -34,6 +35,7 @@ module.exports.Solver = class Solver {
     }
     let innerFunc = () => {
       if (this.boardIsValid()) {
+        this.solved = true;
         return;
       } else if (
         this.sorted_map.length &&
@@ -47,11 +49,19 @@ module.exports.Solver = class Solver {
           board_index_object.possible_values_index =
             board_index_object.possible_values_index + 1;
         } else {
+          if (this.insertion_order.length === 0) {
+            this.solved = false;
+            return false;
+          }
           let last_inserted_board_index = this.insertion_order.pop();
           this.handleRemove(last_inserted_board_index);
           board_index_object.possible_values_index = 0;
         }
       } else {
+        if (this.insertion_order.length === 0) {
+          this.solved = false;
+          return false;
+        }
         let last_inserted_board_index = this.insertion_order.pop();
         this.handleRemove(last_inserted_board_index);
       }
@@ -108,8 +118,7 @@ module.exports.Solver = class Solver {
 
   sortMap() {
     return [...this.index_map.entries()]
-      .filter((a) => a[1].possible_values.length !== 0)
-      .filter((a) => a[1].value === ".")
+      .filter((a) => a[1].possible_values.length !== 0 && a[1].value === ".")
       .sort(
         (a, b) => a[1].possible_values.length - b[1].possible_values.length
       );
