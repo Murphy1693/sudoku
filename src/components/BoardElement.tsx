@@ -26,7 +26,7 @@ const BoardElement = ({
   const [definite, setDefinite] = useState<boolean | null>(null);
   const [colorScheme, setColorScheme] = useState(0);
   const [removedValueAnimation, setRemovedValueAnimation] = useState(false);
-
+  let timeInterval: NodeJS.Timeout;
   useEffect(() => {
     let handleDispatch = ({
       board_index,
@@ -34,6 +34,7 @@ const BoardElement = ({
       value,
       color,
     }: DispatchObject) => {
+      clearTimeout(timeInterval);
       if (value && value !== "0") {
         setDisplayValue(value === "." ? "" : value);
       }
@@ -44,6 +45,9 @@ const BoardElement = ({
       } else {
         if (value === ".") {
           setColorScheme(3);
+          timeInterval = setTimeout(() => {
+            setColorScheme(0);
+          }, speed);
         } else if (definite === true) {
           setColorScheme(4);
         } else {
@@ -52,8 +56,11 @@ const BoardElement = ({
       }
     };
     let index = rowNumber * 9 + columnNumber;
-    valuesSubscription.subscribe(index, handleDispatch);
-  }, []);
+    let unsub = valuesSubscription.subscribe(index, handleDispatch);
+    return () => {
+      unsub();
+    };
+  }, [speed]);
 
   useEffect(() => {
     setDisplayValue(value === "." ? "" : value);

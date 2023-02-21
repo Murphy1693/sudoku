@@ -21,13 +21,16 @@ export type ElementSubscription = {
   subscribe: (
     board_index: number,
     handleDispatch: (dispatchObject: DispatchObject) => void
-  ) => void;
+  ) => () => void;
   dispatch: (dispatchObject: DispatchObject) => void;
 };
 
 export const valuesSubscription: ElementSubscription = {
   subscribe: (board_index, handleDispatch) => {
     listeners[board_index] = handleDispatch;
+    return () => {
+      delete listeners[board_index];
+    };
   },
 
   dispatch: (dispatchObject) => {
