@@ -11,7 +11,7 @@
 #### Example
 
 <div align="center" width="100%">
-  <img src="gif/sudokuSolver.gif">
+  <img src="gif/sudoku_solver.gif">
 </div>
 
 #### Background
